@@ -31,7 +31,7 @@ const VendorLogin = () => {
       if (data.status === "success") {
         // Successfully logged in, redirect to the dashboard or home page
         console.log("Login successful!");
-        navigate("/vendor-dashboard"); // Redirect to vendor dashboard (adjust path as necessary)
+        //navigate("/vendor-dashboard"); // Redirect to vendor dashboard (adjust path as necessary)
       } else {
         alert(data.message);
       }
