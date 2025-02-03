@@ -7,6 +7,10 @@ const connectDB = require('./db');
 const User = require('./models/User');
 const Couple = require('./models/Couple');
 const Vendor = require('./models/Vendor');
+const cors = require("cors");
+
+
+
 
 dotenv.config();
 const app = express();
@@ -17,7 +21,8 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your_jwt_secret'; // Secret for JW
 connectDB();
 
 app.use(express.json()); // Middleware to parse JSON
-
+// Enable CORS
+app.use(cors());
 // REGISTER API
 app.post('/api/register', async (req, res) => {
     const { username, email, password, user_type } = req.body;

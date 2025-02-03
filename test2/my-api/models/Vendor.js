@@ -1,9 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema({
+const VendorSchema = new mongoose.Schema({
     username: { type: String, required: true },
-    email: { type: String, required: true, unique: true }
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true } // Ensure this exists
 });
 
-const Vendor = mongoose.model('Vendor', UserSchema);
-module.exports = Vendor;
+module.exports = mongoose.model("Vendor", VendorSchema);
+
