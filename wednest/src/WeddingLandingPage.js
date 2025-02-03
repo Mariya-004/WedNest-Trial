@@ -31,7 +31,7 @@ const WeddingLandingPage = () => {
               "Turn your dream wedding into reality! Effortlessly plan, organize, and manage every detail with ease. From venues to photographers, everything you need is just a click away."
             </p>
             <div className="mt-10 space-x-4">
-              <Link to="/couple-login">
+              <Link to="/login">
                 <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Login</button>
               </Link>
               <Link to="/signup">
@@ -51,7 +51,7 @@ const WeddingLandingPage = () => {
               "Grow your business and reach couples planning their weddings! Showcase services, manage bookings, and connect with clients—all in one place."
             </p>
             <div className="mt-10 space-x-4">
-              <Link to="/vendor-login">
+              <Link to="/login">
                 <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Login</button>
               </Link>
               <Link to="/signup">
