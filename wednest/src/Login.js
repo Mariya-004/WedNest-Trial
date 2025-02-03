@@ -31,11 +31,8 @@ const Login = () => {
       if (data.status === "success") {
         // Successfully logged in, redirect to the dashboard or home page
         console.log("Login successful!");
-<<<<<<< HEAD:wednest/src/VendorLogin.js
         //navigate("/vendor-dashboard"); // Redirect to vendor dashboard (adjust path as necessary)
-=======
        // navigate("/vendor-dashboard"); // Redirect to vendor dashboard (adjust path as necessary)
->>>>>>> 4c177591 (connection):wednest/src/Login.js
       } else {
         alert(data.message);
       }
