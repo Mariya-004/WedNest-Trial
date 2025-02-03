@@ -78,7 +78,7 @@ const CoupleLogin = () => {
         <p className="mt-4 text-gray-600">
           Don't have an account?{" "}
           <Link
-            to="/couple-signup"
+            to="/Signup"
             className="text-pink-600 font-bold hover:underline"
           >
             Sign Up
