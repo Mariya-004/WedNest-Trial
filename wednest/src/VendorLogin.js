@@ -86,7 +86,7 @@ const VendorLogin = () => {
         <p className="mt-4 text-gray-600">
           Don't have an account?{" "}
           <Link
-            to="/vendor-signup" // Adjust to your vendor signup page route
+            to="/Signup" // Adjust to your vendor signup page route
             className="text-pink-600 font-bold hover:underline"
           >
             Sign Up
