@@ -1,70 +1,131 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import "./index.css";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-const WeddingLandingPage = () => {
+const Signup = () => {
+  const [role, setRole] = useState("Couple");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState(null); // State for success/error messages
+  const [messageType, setMessageType] = useState("error"); // 'error' or 'success'
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage(null); // Reset message on new submission
+
+    const data = { username, email, password, user_type: role };
+
+    try {
+      const response = await fetch("http://localhost:3000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        setMessage("Account created successfully! Redirecting to login...");
+        setMessageType("success");
+
+        setTimeout(() => {
+          navigate("/login"); // Redirect to Login Page after 1.5s
+        }, 1500);
+      } else {
+        setMessage(result.message);
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Server error, please try again later.");
+      setMessageType("error");
+    }
+  };
+
   return (
     <div
-      className="min-h-screen bg-pink-100 flex flex-col items-center py-10 px-5"
-      style={{
-        backgroundImage: "url('/bg.png')",
-        backgroundSize: "100%",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
+      className="min-h-screen flex items-center justify-center bg-pink-100"
+      style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
     >
-      {/* Header Section with Logo & Buttons */}
-      <div className="w-full flex justify-between items-center px-10 py-4">
-        {/* Restore wedNest Logo Position & Size */}
-        <div className="flex-grow flex justify-center">
-          <img
-            src="/wednestHeader.png"
-            alt="wedNest Logo"
-            className="w-50 h-auto mt-[-40px]" // Original position & size restored
-          />
-        </div>
+      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center">
+        <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
 
-        {/* Common Login & Sign Up Buttons */}
-        <div className="space-x-4">
-          <Link to="/login">
-            <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">
-              Login
-            </button>
-          </Link>
-          <Link to="/signup">
-            <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">
-              Sign Up
-            </button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Content Sections */}
-      <div className="mt-10 w-full max-w-6xl space-y-10">
-        {/* For Couples Section */}
-        <div className="bg-white shadow-md rounded-2xl p-6 flex items-center space-x-6 h-[300px]">
-          <img src="/Couple.jpg" alt="Couple" className="w-50 h-50 object-cover rounded-xl" />
-          <div>
-            <h2 className="text-xl font-bold">FOR COUPLES</h2>
-            <p className="text-xl text-black-700 font-serif font-bold mt-10">
-              "Turn your dream wedding into reality! Effortlessly plan, organize, and manage every detail with ease. From venues to photographers, everything you need is just a click away."
-            </p>
+        {/* Message Display */}
+        {message && (
+          <div
+            className={`mt-4 px-4 py-2 rounded-lg text-sm ${
+              messageType === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+            }`}
+          >
+            {message}
           </div>
-        </div>
+        )}
 
-        {/* For Vendors Section */}
-        <div className="bg-white shadow-md rounded-2xl p-6 flex items-center space-x-6 h-[300px]">
-          <img src="/Vendors.png" alt="Vendors" className="w-45 h-50 object-cover rounded-xl" />
-          <div>
-            <h2 className="text-xl font-bold">FOR VENDORS</h2>
-            <p className="text-xl text-black-800 font-serif font-bold mt-10">
-              "Grow your business and reach couples planning their weddings! Showcase services, manage bookings, and connect with clients—all in one place."
-            </p>
+        <form onSubmit={handleSubmit}>
+          <div className="mt-6 space-y-4">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder={role === "Couple" ? "Full Name" : "Business Name"}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 bg-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+            />
+
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email Id"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 bg-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+            />
+
+            {/* Password Input with Toggle Visibility */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 bg-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-700"
+              >
+                {showPassword ? "👁️" : "🙈"} {/* Toggle icon */}
+              </button>
+            </div>
+
+            {/* Role Selection Dropdown */}
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 bg-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+            >
+              <option value="Couple">Couple</option>
+              <option value="Vendor">Vendor</option>
+            </select>
           </div>
-        </div>
+
+          <button
+            type="submit"
+            className="w-full mt-6 bg-pink-600 text-white py-3 rounded-lg hover:bg-pink-700 transition"
+          >
+            Register Now
+          </button>
+        </form>
+
+        <p className="mt-4 text-gray-600">
+          Already a member?{" "}
+          <Link to="/login" className="text-pink-600 font-bold hover:underline">
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );
 };
 
-export default WeddingLandingPage;
+export default Signup;
