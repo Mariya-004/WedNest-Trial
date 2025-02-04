@@ -7,12 +7,14 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const navigate = useNavigate(); // ✅ Initialize navigation
+  const [message, setMessage] = useState(null); // State for success/error messages
+  const [messageType, setMessageType] = useState("error"); // 'error' or 'success'
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage(null); // Reset message on new submission
+
     const data = { username, email, password, user_type: role };
 
     try {
@@ -25,24 +27,40 @@ const Signup = () => {
       const result = await response.json();
 
       if (result.status === "success") {
-        alert("Account created successfully! Redirecting to login...");
-        navigate("/login"); // ✅ Redirect to Login Page
+        setMessage("Account created successfully! Redirecting to login...");
+        setMessageType("success");
+
+        setTimeout(() => {
+          navigate("/login"); // Redirect to Login Page after 1.5s
+        }, 1500);
       } else {
-        setErrorMessage(result.message);
+        setMessage(result.message);
+        setMessageType("error");
       }
     } catch (error) {
-      setErrorMessage("Server error, please try again later.");
+      setMessage("Server error, please try again later.");
+      setMessageType("error");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pink-100"
-      style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
-      
+    <div
+      className="min-h-screen flex items-center justify-center bg-pink-100"
+      style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+    >
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center">
         <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
 
-        {errorMessage && <p className="text-red-600 text-sm mt-2">{errorMessage}</p>}
+        {/* Message Display */}
+        {message && (
+          <div
+            className={`mt-4 px-4 py-2 rounded-lg text-sm ${
+              messageType === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+            }`}
+          >
+            {message}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mt-6 space-y-4">
