@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import WeddingLandingPage from "./WeddingLandingPage";
 import Login from "./Login";
 import Signup from "./Signup";
-import VendorDashboard from "./VendorDashboard"; // Import the new dashboard
+import VendorDashboard from "./VendorDashboard";
+import CoupleDashboard from "./CoupleDashboard"; // Import the Couple Dashboard
 
 function App() {
   return (
@@ -12,7 +13,9 @@ function App() {
         <Route path="/" element={<WeddingLandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/vendor-dashboard" element={<VendorDashboard />} /> {/* Vendor Dashboard Route */}
+        <Route path="/couple-dashboard" element={<CoupleDashboard/>}/>
+        <Route path="/vendor-dashboard" element={<VendorDashboard />} />
+      
       </Routes>
     </Router>
   );

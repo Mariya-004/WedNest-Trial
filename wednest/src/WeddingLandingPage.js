@@ -13,14 +13,33 @@ const WeddingLandingPage = () => {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="text-center">
-        <img
-          src="/wednestHeader.png"
-          alt="wedNest Logo"
-          className="w-50 h-auto mt-[-40px]"
-        />
+      {/* Header Section with Logo & Buttons */}
+      <div className="w-full flex justify-between items-center px-10 py-4">
+        {/* Restore wedNest Logo Position & Size */}
+        <div className="flex-grow flex justify-center">
+          <img
+            src="/wednestHeader.png"
+            alt="wedNest Logo"
+            className="w-50 h-auto mt-[-40px]" // Original position & size restored
+          />
+        </div>
+
+        {/* Common Login & Sign Up Buttons */}
+        <div className="space-x-4">
+          <Link to="/login">
+            <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">
+              Login
+            </button>
+          </Link>
+          <Link to="/signup">
+            <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">
+              Sign Up
+            </button>
+          </Link>
+        </div>
       </div>
 
+      {/* Content Sections */}
       <div className="mt-10 w-full max-w-6xl space-y-10">
         {/* For Couples Section */}
         <div className="bg-white shadow-md rounded-2xl p-6 flex items-center space-x-6 h-[300px]">
@@ -30,15 +49,6 @@ const WeddingLandingPage = () => {
             <p className="text-xl text-black-700 font-serif font-bold mt-10">
               "Turn your dream wedding into reality! Effortlessly plan, organize, and manage every detail with ease. From venues to photographers, everything you need is just a click away."
             </p>
-            <div className="mt-10 space-x-4">
-              <Link to="/login">
-                <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Login</button>
-              </Link>
-              <Link to="/signup">
-                <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Sign Up</button>
-              </Link>
-
-            </div>
           </div>
         </div>
 
@@ -50,15 +60,6 @@ const WeddingLandingPage = () => {
             <p className="text-xl text-black-800 font-serif font-bold mt-10">
               "Grow your business and reach couples planning their weddings! Showcase services, manage bookings, and connect with clients—all in one place."
             </p>
-            <div className="mt-10 space-x-4">
-              <Link to="/login">
-                <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Login</button>
-              </Link>
-              <Link to="/signup">
-                <button className="bg-purple-500 text-white px-4 py-2 rounded-xl">Sign Up</button>
-              </Link>
-
-            </div>
           </div>
         </div>
       </div>
