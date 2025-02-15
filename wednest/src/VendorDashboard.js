@@ -85,7 +85,7 @@ export default function VendorDashboard() {
 
           {/* ✅ Edit Profile Button */}
           <button 
-            onClick={() => navigate("/edit-profile")}
+            onClick={() => navigate("/vendor-profile")}
             className="mt-6 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
           >
             Edit Profile

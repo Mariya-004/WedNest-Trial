@@ -1,8 +1,30 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CoupleDashboard() {
   const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState(null);
+  const user_id = localStorage.getItem("user_id");
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/couple/dashboard/${user_id}`);
+        const data = await response.json();
+
+        if (data.status === "success") {
+          console.log("Fetched Dashboard Data:", data.data);
+          setDashboardData(data.data);
+        } else {
+          console.error("Error fetching dashboard:", data.message);
+        }
+      } catch (error) {
+        console.error("API Error:", error);
+      }
+    };
+
+    if (user_id) fetchDashboardData();
+  }, [user_id]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -10,7 +32,7 @@ export default function CoupleDashboard() {
   };
 
   const handleEditProfile = () => {
-    navigate("/couple-profile"); // Navigate to the Couple Profile page
+    navigate("/couple-profile");
   };
 
   return (
@@ -38,9 +60,21 @@ export default function CoupleDashboard() {
           }}
         >
           <h2 className="text-lg font-semibold text-black">Welcome</h2>
-          <div className="w-32 h-32 bg-gray-400 rounded-full"></div>
-          <p className="font-semibold text-black text-center">@Username</p>
-          <p className="text-black text-center">user@example.com</p>
+          <div className="w-32 h-32 bg-gray-400 rounded-full">
+            {dashboardData?.profile_image ? (
+              <img
+              src={dashboardData.profile_image} 
+                alt="Profile"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-300 rounded-full">
+                No Image
+              </div>
+            )}
+          </div>
+          <p className="font-semibold text-black text-center">@{dashboardData?.username || "Username"}</p>
+          <p className="text-black text-center">{dashboardData?.email || "user@example.com"}</p>
           <button onClick={handleEditProfile} className="bg-blue-500 text-white px-6 py-2 rounded">
             Edit Profile
           </button>
@@ -60,8 +94,12 @@ export default function CoupleDashboard() {
                 }}
               >
                 <h2 className="text-xl font-semibold">Budget</h2>
-                <p className="text-lg">Budget Set: $0</p>
-                <p className="text-lg">Remaining: $0</p>
+                <p className="text-lg">
+                  Budget Set: ${dashboardData?.budget ?? 0}
+                </p>
+                <p className="text-lg">
+                  Remaining: ${dashboardData?.remaining_budget ?? 0}
+                </p>
               </div>
 
               <div
@@ -72,8 +110,19 @@ export default function CoupleDashboard() {
                   width: "100%",
                 }}
               >
-                <h2 className="text-xl font-semibold">Welcome Back, User!</h2>
-                <p className="text-lg">Your big day on: Not Set</p>
+                <h2 className="text-xl font-semibold">
+                  Welcome Back, {dashboardData?.username || "User"}!
+                </h2>
+                <p className="text-lg">
+                  Your big day on:{" "}
+                  {dashboardData?.wedding_date
+                    ? new Date(dashboardData.wedding_date).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "Not Set"}
+                </p>
               </div>
             </div>
 
@@ -87,12 +136,25 @@ export default function CoupleDashboard() {
               }}
             >
               <h2 className="text-xl text-center font-semibold">Vendors Booked</h2>
-              <p className="text-lg text-center">Shows vendor name and service type</p>
+              {dashboardData?.booked_vendors?.length > 0 ? (
+                <ul className="text-lg text-center">
+                  {dashboardData.booked_vendors.map((vendor, index) => (
+                    <li key={index} className="py-1">
+                      {vendor.service_type} - {vendor.vendor_id}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-lg text-center">No vendors booked</p>
+              )}
             </div>
           </div>
 
           <div className="text-center mt-6">
-            <button onClick={handleLogout} className="bg-red-500 text-white px-6 py-2 rounded shadow-md">
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white px-6 py-2 rounded shadow-md"
+            >
               Log Out
             </button>
           </div>

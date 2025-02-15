@@ -139,7 +139,9 @@ app.put('/api/couple/profile', upload.single('profileImage'), async (req, res) =
         };
 
         if (req.file) {
-            updatedData.profile_image = req.file.path;
+            const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+            updatedData.profile_image = imageUrl;
+            
         }
 
         const updatedCouple = await Couple.findByIdAndUpdate(user_id, updatedData, { new: true });
@@ -178,6 +180,97 @@ app.get('/api/couple/profile/:user_id', async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+
+// ✅ GET COUPLE DASHBOARD DATA
+app.get('/api/couple/dashboard/:user_id', async (req, res) => {
+    let { user_id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    }
+
+    try {
+        const couple = await Couple.findById(user_id).populate('booked_vendors.vendor_id', 'name service_type');
+
+        if (!couple) {
+            return res.status(404).json({ status: "error", message: "User not found" });
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                username: couple.username,
+                email: couple.email,
+                wedding_date: couple.wedding_date || "Not Set",
+                budget: couple.budget || { total: 0, remaining: 0 },
+                profile_image: couple.profile_image, 
+                booked_vendors: couple.booked_vendors || []
+            }
+        });
+    } catch (error) {
+        console.error("Couple Dashboard Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+// ✅ UPDATE VENDOR PROFILE API
+app.put('/api/vendor/profile', upload.single('profileImage'), async (req, res) => {
+    let { user_id, businessName, vendorType, contactNumber, email, location, pricing } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ status: "error", message: "User ID is required" });
+    }
+
+    // Validate user_id format
+    user_id = user_id.trim();
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    }
+
+    try {
+        let updatedData = { businessName, vendorType, contactNumber, email, location, pricing };
+
+        if (req.file) {
+            const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+            updatedData.profile_image = imageUrl;
+        }
+
+        const updatedVendor = await Vendor.findByIdAndUpdate(user_id, updatedData, { new: true });
+
+        if (!updatedVendor) {
+            return res.status(404).json({ status: "error", message: "Vendor not found" });
+        }
+
+        res.status(200).json({ status: "success", message: "Profile updated", data: updatedVendor });
+    } catch (error) {
+        console.error("Update Vendor Profile Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+// ✅ GET VENDOR PROFILE API
+app.get('/api/vendor/profile/:vendor_id', async (req, res) => {
+    let { user_id } = req.params;
+
+    // Validate vendor_id format
+   // vendor_id = user_id.trim();
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid Vendor ID format" });
+    }
+
+    try {
+        const vendor = await Vendor.findById(user_id);
+
+        if (!vendor) {
+            return res.status(404).json({ status: "error", message: "Profile not found" });
+        }
+
+        res.status(200).json({ status: "success", data: vendor });
+    } catch (error) {
+        console.error("Get Vendor Profile Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
 
 // ✅ SERVER START
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
