@@ -40,9 +40,14 @@ const Login = () => {
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("userRole", role);
 
+
+        localStorage.setItem("user_id", data.data.user_id);
+        localStorage.setItem("user_type", data.data.user_type); // ✅ Storing user_type
+        
+
         // ✅ Redirect based on role
         setTimeout(() => {
-          if (role === "Vendor") {
+          if (data.data.user_type==="Vendor") {
             navigate("/vendor-dashboard");
           } else {
             navigate("/couple-dashboard");

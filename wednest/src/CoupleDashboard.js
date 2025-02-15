@@ -1,111 +1,100 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CoupleDashboard() {
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // ✅ Get user details from localStorage
-  const email = localStorage.getItem("userEmail");
-  const authToken = localStorage.getItem("authToken");
-  const userRole = localStorage.getItem("userRole");
-
-  useEffect(() => {
-    // ✅ Redirect to login if user is not authenticated or has the wrong role
-    if (!authToken || !email || userRole !== "Couple") {
-      navigate("/login");
-      return;
-    }
-
-    // ✅ Fetch couple details from backend
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/couple/dashboard/${email}`, {
-          headers: { Authorization: `Bearer ${authToken}` }, // Send token
-        });
-        const data = await response.json();
-
-        console.log("API Response:", data); // Debug API response
-
-        if (data.status === "success") {
-          setUserData(data.data);
-        } else {
-          console.error("Failed to fetch couple data:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching couple data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [email, authToken, userRole, navigate]);
-
-  // ✅ Logout Function
   const handleLogout = () => {
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole"); // Clear role
-    navigate("/login");
+    localStorage.clear();
+    navigate("/");
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
-  }
+  const handleEditProfile = () => {
+    navigate("/couple-profile"); // Navigate to the Couple Profile page
+  };
 
   return (
-    <div className="min-h-screen bg-blue-100">
-      {/* Header Section */}
-      <header className="bg-orange-300 p-4 flex justify-between items-center">
-        <img src="WEDNEST_LOGO.png" alt="WedNest Logo" className="h-24 w-auto" />
-        <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">
-          Log Out
-        </button>
-      </header>
+    <div className="fixed inset-0 w-full h-full bg-blue-100 overflow-hidden">
+      <div className="h-full overflow-y-auto">
+        {/* Header */}
+        <header className="bg-orange-300 p-4 flex justify-between items-center fixed w-full top-0 left-0 z-10 shadow-lg">
+          <img src="WEDNEST_LOGO.png" alt="WedNest Logo" className="h-24 w-auto" />
+          <div className="flex gap-6">
+            <button className="text-lg">Home</button>
+            <span className="text-lg">🛒</span>
+            <span className="text-lg">👤</span>
+          </div>
+        </header>
 
-
-      <div className="grid grid-cols-4 gap-6 p-6">
         {/* Sidebar */}
         <div
-          className="p-6 rounded-lg min-h-[700px] text-center bg-cover bg-center"
-          style={{ backgroundImage: "url('/bgcouple.jpg')" }}
+          className="fixed left-0 top-[100px] w-1/5 h-[calc(100vh-100px)] flex flex-col items-center justify-center space-y-6 px-4 shadow-lg"
+          style={{
+            backgroundImage: "url('/sidebar.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            backgroundBlendMode: "overlay",
+          }}
         >
-          <div className="w-32 h-32 bg-gray-400 mb-4 rounded-full"></div>
-          <p className="font-semibold">@{userData?.username || "Loading..."}</p>
-          <p>{userData?.email || "No email found"}</p>
-          <p className="text-lg font-semibold">Wedding Countdown</p>
-          <p>{userData?.wedding_date || "Not Set"}</p>
+          <h2 className="text-lg font-semibold text-black">Welcome</h2>
+          <div className="w-32 h-32 bg-gray-400 rounded-full"></div>
+          <p className="font-semibold text-black text-center">@Username</p>
+          <p className="text-black text-center">user@example.com</p>
+          <button onClick={handleEditProfile} className="bg-blue-500 text-white px-6 py-2 rounded">
+            Edit Profile
+          </button>
         </div>
 
         {/* Main Content */}
-        <div className="col-span-3 grid grid-cols-3 gap-6">
-          {/* Budget Section */}
-          <div
-            className="p-4 rounded-lg text-white bg-cover bg-center"
-            style={{ backgroundImage: "url('/bgcouple.jpg')" }}
-          >
-            <h2 className="text-lg font-semibold">Budget</h2>
-            <p>Budget Set: ${userData?.budget || 0}</p>
+        <div className="pl-[22%] pt-[120px] pr-6">
+          <div className="grid grid-cols-3 gap-6 p-6">
+            {/* Budget and Welcome Back Section */}
+            <div className="col-span-2 grid grid-cols-2 gap-6">
+              <div
+                className="p-6 rounded-lg text-black bg-cover bg-center flex flex-col items-center justify-center shadow-md"
+                style={{
+                  backgroundImage: "url('/bgcouple.jpg')",
+                  height: "300px",
+                  width: "100%",
+                }}
+              >
+                <h2 className="text-xl font-semibold">Budget</h2>
+                <p className="text-lg">Budget Set: $0</p>
+                <p className="text-lg">Remaining: $0</p>
+              </div>
+
+              <div
+                className="p-6 rounded-lg text-center text-black bg-cover bg-center flex flex-col items-center justify-center shadow-md"
+                style={{
+                  backgroundImage: "url('/bgcouple.jpg')",
+                  height: "300px",
+                  width: "100%",
+                }}
+              >
+                <h2 className="text-xl font-semibold">Welcome Back, User!</h2>
+                <p className="text-lg">Your big day on: Not Set</p>
+              </div>
+            </div>
+
+            {/* Vendors Booked Section */}
+            <div
+              className="p-6 rounded-lg text-black bg-cover bg-center flex flex-col items-center justify-center shadow-md"
+              style={{
+                backgroundImage: "url('/bgcouple.jpg')",
+                height: "300px",
+                width: "100%",
+              }}
+            >
+              <h2 className="text-xl text-center font-semibold">Vendors Booked</h2>
+              <p className="text-lg text-center">Shows vendor name and service type</p>
+            </div>
           </div>
 
-          {/* Welcome Section */}
-          <div
-            className="p-4 rounded-lg text-center text-white bg-cover bg-center"
-            style={{ backgroundImage: "url('/bgcouple.jpg')" }}
-          >
-            <h2 className="text-lg font-semibold">Welcome Back, {userData?.username || "User"}!</h2>
-            <p>Your big day on: {userData?.wedding_date || "Not Set"}</p>
-          </div>
-
-          {/* Vendors Section */}
-          <div
-            className="p-4 rounded-lg text-white bg-cover bg-center"
-            style={{ backgroundImage: "url('/bgcouple.jpg')" }}
-          >
-            <h2 className="text-lg font-semibold">Vendors Booked</h2>
-            <p>Shows vendor name and service type</p>
+          <div className="text-center mt-6">
+            <button onClick={handleLogout} className="bg-red-500 text-white px-6 py-2 rounded shadow-md">
+              Log Out
+            </button>
           </div>
         </div>
       </div>

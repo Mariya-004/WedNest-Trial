@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const cors = require("cors");
 const multer = require('multer');
+const path = require('path'); // For serving uploaded files
 const connectDB = require('./db');
 const Couple = require('./models/Couple');
 const Vendor = require('./models/Vendor');
@@ -19,13 +20,16 @@ connectDB();
 app.use(express.json());
 app.use(cors());
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Multer setup for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, 'uploads/'); // Files will be stored in "uploads" folder
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + file.originalname); // Unique file naming
     }
 });
 const upload = multer({ storage });
@@ -63,6 +67,7 @@ app.post('/api/register', async (req, res) => {
         res.status(201).json({ status: "success", message: "Account created successfully" });
 
     } catch (error) {
+        console.error("Registration Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
@@ -101,79 +106,77 @@ app.post('/api/login', async (req, res) => {
             data: { user_id: user._id, user_type: userType, token },
         });
     } catch (error) {
+        console.error("Login Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-
 
 // ✅ LOGOUT API
 app.post('/api/logout', (req, res) => {
     res.status(200).json({ status: "success", message: "Logout successful" });
 });
 
-// ✅ USER PROFILE SETUP
-app.post('/api/user/profile', upload.single('profile_image'), async (req, res) => {
-    const { user_id, profile_info } = req.body;
-    const profileImage = req.file ? `/uploads/${req.file.filename}` : null;
+// ✅ UPDATE PROFILE API (Couple)
+app.put('/api/couple/profile', upload.single('profileImage'), async (req, res) => {
+    let { user_id, username, contactNumber, weddingDate, budgetRange } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ status: "error", message: "User ID is required" });
+    }
+
+    // Trim user_id and validate format
+    user_id = user_id.trim();
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    }
 
     try {
-        await Couple.findByIdAndUpdate(user_id, { profile_info, profile_image: profileImage }) ||
-        await Vendor.findByIdAndUpdate(user_id, { profile_info, profile_image: profileImage });
+        let updatedData = { 
+            username, 
+            contact_number: contactNumber, 
+            wedding_date: weddingDate, 
+            budget: budgetRange 
+        };
 
-        res.json({ status: "success", message: "Profile created successfully" });
+        if (req.file) {
+            updatedData.profile_image = req.file.path;
+        }
+
+        const updatedCouple = await Couple.findByIdAndUpdate(user_id, updatedData, { new: true });
+
+        if (!updatedCouple) {
+            return res.status(404).json({ status: "error", message: "Couple not found" });
+        }
+
+        res.status(200).json({ status: "success", message: "Profile updated", data: updatedCouple });
     } catch (error) {
-        res.status(500).json({ status: "error", message: "Failed to create profile" });
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
     }
 });
 
-// ✅ UPDATE PROFILE
-app.put('/api/user/profile', upload.single('profile_image'), async (req, res) => {
-    const { user_id, updated_info } = req.body;
-    const profileImage = req.file ? `/uploads/${req.file.filename}` : null;
+// ✅ GET COUPLE PROFILE API
+app.get('/api/couple/profile/:user_id', async (req, res) => {
+    let { user_id } = req.params;
+
+    // Trim and validate user_id
+    user_id = user_id.trim();
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    }
 
     try {
-        await Couple.findByIdAndUpdate(user_id, { profile_info: updated_info, profile_image: profileImage }) ||
-        await Vendor.findByIdAndUpdate(user_id, { profile_info: updated_info, profile_image: profileImage });
+        const couple = await Couple.findById(user_id);
 
-        res.json({ status: "success", message: "Profile updated successfully" });
+        if (!couple) {
+            return res.status(404).json({ status: "error", message: "Profile not found" });
+        }
+
+        res.status(200).json({ status: "success", data: couple });
     } catch (error) {
-        res.status(500).json({ status: "error", message: "Failed to update profile" });
+        console.error("Get Profile Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
     }
-});
-
-// ✅ COUPLE-SPECIFIC DETAILS API
-app.post('/api/user/couple', async (req, res) => {
-    const { user_id, budget, wedding_date } = req.body;
-
-    try {
-        await Couple.findByIdAndUpdate(user_id, { budget, wedding_date });
-
-        res.json({ status: "success", message: "Couple details updated successfully" });
-    } catch (error) {
-        res.status(500).json({ status: "error", message: "Failed to update couple details" });
-    }
-});
-
-// ✅ VENDOR-SPECIFIC DETAILS API
-app.post('/api/user/vendor', async (req, res) => {
-    const { user_id, business_name, pricing, description } = req.body;
-
-    try {
-        await Vendor.findByIdAndUpdate(user_id, { business_name, pricing, description });
-
-        res.json({ status: "success", message: "Vendor details updated successfully" });
-    } catch (error) {
-        res.status(500).json({ status: "error", message: "Failed to update vendor details" });
-    }
-});
-
-// ✅ DASHBOARD APIS
-app.get('/api/dashboard/couple', async (req, res) => {
-    res.json({ status: "success", data: { budget_set: "50000", budget_remaining: "20000", spending_breakdown: {}, vendors_booked: [] } });
-});
-
-app.get('/api/dashboard/vendor', async (req, res) => {
-    res.json({ status: "success", data: { total_earnings: "20000", ratings: 4.5, ratings_summary: { total_reviews: 10, positive_reviews: 8, negative_reviews: 2 } } });
 });
 
 // ✅ SERVER START
