@@ -11,15 +11,19 @@ const VendorProfileSetup = () => {
     email: "",
     location: "",
     pricing: "",
-    user_id: "", // Dynamically set from localStorage
+    user_id: "",
   });
 
   const [profileImage, setProfileImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewProfileImage, setPreviewProfileImage] = useState(null);
+
+  const [serviceImages, setServiceImages] = useState([]);
+  const [previewServiceImages, setPreviewServiceImages] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // ✅ Load user_id dynamically (from localStorage)
+  // ✅ Load user_id from localStorage once
   useEffect(() => {
     const storedUserId = localStorage.getItem("user_id");
     if (storedUserId) {
@@ -48,7 +52,11 @@ const VendorProfileSetup = () => {
           }));
 
           if (result.data.profile_image) {
-            setPreviewImage(result.data.profile_image);
+            setPreviewProfileImage(result.data.profile_image);
+          }
+
+          if (result.data.service_images) {
+            setPreviewServiceImages(result.data.service_images);
           }
         }
       } catch (error) {
@@ -64,12 +72,21 @@ const VendorProfileSetup = () => {
     setVendorData({ ...vendorData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Handle image selection
-  const handleImageChange = (e) => {
+  // ✅ Handle profile image selection
+  const handleProfileImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      setPreviewImage(URL.createObjectURL(file));
+      setPreviewProfileImage(URL.createObjectURL(file));
+    }
+  };
+
+  // ✅ Handle service images selection (multiple files)
+  const handleServiceImagesChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length) {
+      setServiceImages(files);
+      setPreviewServiceImages(files.map((file) => URL.createObjectURL(file)));
     }
   };
 
@@ -90,13 +107,16 @@ const VendorProfileSetup = () => {
     formData.append("businessName", vendorData.businessName);
     formData.append("vendorType", vendorData.vendorType);
     formData.append("contactNumber", vendorData.contactNumber);
-    formData.append("email", vendorData.email);
     formData.append("location", vendorData.location);
     formData.append("pricing", vendorData.pricing);
 
     if (profileImage) {
       formData.append("profileImage", profileImage);
     }
+
+    serviceImages.forEach((image) => {
+      formData.append("serviceImages", image);
+    });
 
     try {
       const response = await fetch("http://localhost:3000/api/vendor/profile", {
@@ -131,94 +151,40 @@ const VendorProfileSetup = () => {
           <div className="flex gap-8">
             {/* Left Section - Inputs */}
             <div className="w-1/2 flex flex-col space-y-4">
-              <input
-                type="text"
-                name="businessName"
-                placeholder="Business Name"
-                value={vendorData.businessName}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm focus:ring-2 focus:ring-yellow-500"
-                required
-              />
-              <input
-                type="text"
-                name="vendorType"
-                placeholder="Vendor Type"
-                value={vendorData.vendorType}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm focus:ring-2 focus:ring-yellow-500"
-                required
-              />
-              <input
-                type="tel"
-                name="contactNumber"
-                placeholder="Contact Number"
-                value={vendorData.contactNumber}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm focus:ring-2 focus:ring-yellow-500"
-                required
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                value={vendorData.email}
-                onChange={handleChange}
-                disabled
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm opacity-50 cursor-not-allowed"
-              />
-              <input
-                type="text"
-                name="location"
-                placeholder="Business Location"
-                value={vendorData.location}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm focus:ring-2 focus:ring-yellow-500"
-                required
-              />
-              <input
-                type="text"
-                name="pricing"
-                placeholder="Pricing Details"
-                value={vendorData.pricing}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm focus:ring-2 focus:ring-yellow-500"
-              />
+              <input type="text" name="businessName" placeholder="Business Name" value={vendorData.businessName} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              <input type="text" name="vendorType" placeholder="Vendor Type" value={vendorData.vendorType} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              <input type="tel" name="contactNumber" placeholder="Contact Number" value={vendorData.contactNumber} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              <input type="text" name="location" placeholder="Business Location" value={vendorData.location} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              <input type="text" name="pricing" placeholder="Pricing Details" value={vendorData.pricing} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" />
             </div>
 
-            {/* Right Section - Image Upload */}
+            {/* Right Section - Profile & Service Images */}
             <div className="w-1/2 flex flex-col items-center">
               <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-yellow-400 shadow-md">
-                {previewImage ? (
-                  <img src={previewImage} alt="Profile Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-gray-500">📷 No Image</span>
-                )}
+                {previewProfileImage ? <img src={previewProfileImage} alt="Profile Preview" className="w-full h-full object-cover" /> : <span className="text-gray-500">📷 No Image</span>}
               </div>
-              <label className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded-lg cursor-pointer text-sm shadow-lg hover:bg-yellow-600 transition-all">
-                Upload Business Logo
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+
+              <label className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-600 transition">
+                📸 Choose Profile Image
+                <input type="file" accept="image/*" className="hidden" onChange={handleProfileImageChange} />
               </label>
+
+              <label className="mt-4 bg-orange-500 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-orange-600 transition">
+                📂 Choose Service Images
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleServiceImagesChange} />
+              </label>
+
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {previewServiceImages.map((img, index) => (
+                  <img key={index} src={img} alt={`Service ${index}`} className="w-16 h-16 object-cover rounded-lg border-2 border-orange-400 shadow-sm" />
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="mt-6 flex justify-center">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-1/2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
-            >
-              {loading ? "🚀 Saving..." : "💾 Save Profile"}
-            </button>
-          </div>
-
-          {/* Message Display */}
-          {message && (
-            <div className={`mt-4 text-center font-semibold ${message.includes("successfully") ? "text-green-600" : "text-red-500"}`}>
-              {message}
-            </div>
-          )}
+          <button type="submit" className="w-full bg-orange-500 text-white py-3 rounded-lg mt-6 hover:bg-orange-600 transition">
+            {loading ? "🚀 Saving..." : "💾 Save Profile"}
+          </button>
         </form>
       </div>
     </div>

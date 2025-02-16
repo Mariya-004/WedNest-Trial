@@ -26,13 +26,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Multer setup for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Files will be stored in "uploads" folder
+        cb(null, 'uploads/'); // Store files in the 'uploads' directory
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname); // Unique file naming
     }
 });
+
 const upload = multer({ storage });
+
+// Middleware for multiple images (max 5)
+const uploadMultiple = upload.array('serviceImages', 5);
+
 
 // ✅ REGISTER API
 app.post('/api/register', async (req, res) => {
@@ -212,29 +217,26 @@ app.get('/api/couple/dashboard/:user_id', async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-// ✅ UPDATE VENDOR PROFILE API
-app.put('/api/vendor/profile', upload.single('profileImage'), async (req, res) => {
-    let { user_id, businessName, vendorType, contactNumber, email, location, pricing } = req.body;
+// ✅ VENDOR PROFILE UPDATE API (WITH SERVICE IMAGES)
+app.put('/api/vendor/profile', upload.fields([{ name: 'profileImage', maxCount: 1 }, { name: 'serviceImages', maxCount: 5 }]), async (req, res) => {
+    let { user_id, businessName, vendorType, contactNumber, location, pricing } = req.body;
 
-    if (!user_id) {
-        return res.status(400).json({ status: "error", message: "User ID is required" });
-    }
-
-    // Validate user_id format
-    user_id = user_id.trim();
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    if (!user_id || !mongoose.Types.ObjectId.isValid(user_id.trim())) {
+        return res.status(400).json({ status: "error", message: "Invalid or missing User ID" });
     }
 
     try {
-        let updatedData = { businessName, vendorType, contactNumber, email, location, pricing };
+        let updatedData = { businessName, vendorType, contactNumber, location, pricing };
 
-        if (req.file) {
-            const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-            updatedData.profile_image = imageUrl;
+        if (req.files.profileImage) {
+            updatedData.profile_image = `${req.protocol}://${req.get("host")}/uploads/${req.files.profileImage[0].filename}`;
         }
 
-        const updatedVendor = await Vendor.findByIdAndUpdate(user_id, updatedData, { new: true });
+        if (req.files.serviceImages) {
+            updatedData.service_images = req.files.serviceImages.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`);
+        }
+
+        const updatedVendor = await Vendor.findByIdAndUpdate(user_id.trim(), updatedData, { new: true });
 
         if (!updatedVendor) {
             return res.status(404).json({ status: "error", message: "Vendor not found" });
@@ -249,16 +251,14 @@ app.put('/api/vendor/profile', upload.single('profileImage'), async (req, res) =
 
 // ✅ GET VENDOR PROFILE API
 app.get('/api/vendor/profile/:vendor_id', async (req, res) => {
-    let { user_id } = req.params;
+    let { vendor_id } = req.params;
 
-    // Validate vendor_id format
-   // vendor_id = user_id.trim();
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+    if (!mongoose.Types.ObjectId.isValid(vendor_id.trim())) {
         return res.status(400).json({ status: "error", message: "Invalid Vendor ID format" });
     }
 
     try {
-        const vendor = await Vendor.findById(user_id);
+        const vendor = await Vendor.findById(vendor_id.trim());
 
         if (!vendor) {
             return res.status(404).json({ status: "error", message: "Profile not found" });
@@ -267,6 +267,44 @@ app.get('/api/vendor/profile/:vendor_id', async (req, res) => {
         res.status(200).json({ status: "success", data: vendor });
     } catch (error) {
         console.error("Get Vendor Profile Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+app.get('/api/vendor/dashboard/:user_id', async (req, res) => {
+    let { user_id } = req.params;
+
+    // Validate user_id
+    user_id = user_id.trim();
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid User ID format" });
+    }
+
+    try {
+        // Find vendor by user_id
+        const vendor = await Vendor.findById(user_id);
+
+        if (!vendor) {
+            return res.status(404).json({ status: "error", message: "Vendor not found" });
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                username: vendor.username,
+                email: vendor.email,
+                business_name: vendor.businessName || "Not Set",
+                vendor_type: vendor.vendorType || "Not Set",
+                earnings: vendor.earnings || 0,
+                profile_image: vendor.profile_image || "/profile.png",
+                upcoming_bookings: vendor.upcomingBookings || [],
+                ratings: vendor.ratings || 0,
+                service_images: vendor.service_images || []
+            }
+        });
+
+    } catch (error) {
+        console.error("Vendor Dashboard Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
