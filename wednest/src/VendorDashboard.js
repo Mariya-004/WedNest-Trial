@@ -78,7 +78,7 @@ export default function VendorDashboard() {
           {/* Profile Picture */}
           <div className="w-32 h-32 mb-4 rounded-full mx-auto overflow-hidden">
             <img
-              src={userData?.profileImage || "/profile.png"}
+              src={userData?.profile_image || "/profile.png"}
               alt="Profile"
               className="w-full h-full object-cover"
             />
@@ -161,8 +161,8 @@ export default function VendorDashboard() {
             <div className="p-6 text-center border-4 border-gray-300 rounded-lg shadow-lg bg-gray-200 text-black">
               <h2 className="text-xl font-semibold">Your Service Images</h2>
               <div className="flex justify-center gap-4 mt-4">
-                {userData?.serviceImages?.length > 0 ? (
-                  userData.serviceImages.map((image, index) => (
+                {userData?.service_images?.length > 0 ? (
+                  userData.service_images.map((image, index) => (
                     <img
                       key={index}
                       src={image}
