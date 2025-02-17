@@ -207,7 +207,7 @@ app.get('/api/couple/dashboard/:user_id', async (req, res) => {
                 username: couple.username,
                 email: couple.email,
                 wedding_date: couple.wedding_date || "Not Set",
-                budget: couple.budget || { total: 0, remaining: 0 },
+                budget: couple.budget ,
                 profile_image: couple.profile_image, 
                 booked_vendors: couple.booked_vendors || []
             }

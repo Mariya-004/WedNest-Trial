@@ -12,8 +12,9 @@ export default function CoupleDashboard() {
         const response = await fetch(`http://localhost:3000/api/couple/dashboard/${user_id}`);
         const data = await response.json();
 
+        console.log("Fetched Dashboard Data:", data); // Debugging
+
         if (data.status === "success") {
-          console.log("Fetched Dashboard Data:", data.data);
           setDashboardData(data.data);
         } else {
           console.error("Error fetching dashboard:", data.message);
@@ -63,7 +64,7 @@ export default function CoupleDashboard() {
           <div className="w-32 h-32 bg-gray-400 rounded-full">
             {dashboardData?.profile_image ? (
               <img
-              src={dashboardData.profile_image} 
+                src={dashboardData.profile_image}
                 alt="Profile"
                 className="w-full h-full rounded-full object-cover"
               />
@@ -85,6 +86,7 @@ export default function CoupleDashboard() {
           <div className="grid grid-cols-3 gap-6 p-6">
             {/* Budget and Welcome Back Section */}
             <div className="col-span-2 grid grid-cols-2 gap-6">
+              {/* Budget Card */}
               <div
                 className="p-6 rounded-lg text-black bg-cover bg-center flex flex-col items-center justify-center shadow-md"
                 style={{
@@ -94,14 +96,15 @@ export default function CoupleDashboard() {
                 }}
               >
                 <h2 className="text-xl font-semibold">Budget</h2>
-                <p className="text-lg">
-                  Budget Set: ${dashboardData?.budget ?? 0}
-                </p>
-                <p className="text-lg">
-                  Remaining: ${dashboardData?.remaining_budget ?? 0}
-                </p>
+                {/* Display budget directly */}
+                {dashboardData?.budget != null ? (
+                  <p className="text-lg">Budget Set: ${dashboardData.budget}</p>
+                ) : (
+                  <p className="text-lg">Loading...</p>
+                )}
               </div>
 
+              {/* Welcome Back Card */}
               <div
                 className="p-6 rounded-lg text-center text-black bg-cover bg-center flex flex-col items-center justify-center shadow-md"
                 style={{
@@ -150,6 +153,7 @@ export default function CoupleDashboard() {
             </div>
           </div>
 
+          {/* Logout Button */}
           <div className="text-center mt-6">
             <button
               onClick={handleLogout}
