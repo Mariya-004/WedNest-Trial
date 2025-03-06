@@ -11,9 +11,7 @@ const coupleSchema = new mongoose.Schema(
     profile_image: { type: String, default: "" }, // URL for profile picture
 
     // Wedding Details
-    budget: {
-      total: { type: Number, default: 0 },
-      remaining: { type: Number, default: 0 }
+    budget: { type: Number, default: 0
     },
     wedding_date: { type: Date, default: null },
 

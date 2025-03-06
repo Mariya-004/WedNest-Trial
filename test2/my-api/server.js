@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const cors = require("cors");
 const multer = require('multer');
-const path = require('path'); // For serving uploaded files
+const path = require('path'); 
 const connectDB = require('./db');
 const Couple = require('./models/Couple');
 const Vendor = require('./models/Vendor');
@@ -207,7 +207,7 @@ app.get('/api/couple/dashboard/:user_id', async (req, res) => {
                 username: couple.username,
                 email: couple.email,
                 wedding_date: couple.wedding_date || "Not Set",
-                budget: couple.budget || { total: 0, remaining: 0 },
+                budget: couple.budget ,
                 profile_image: couple.profile_image, 
                 booked_vendors: couple.booked_vendors || []
             }
@@ -219,14 +219,14 @@ app.get('/api/couple/dashboard/:user_id', async (req, res) => {
 });
 // ✅ VENDOR PROFILE UPDATE API (WITH SERVICE IMAGES)
 app.put('/api/vendor/profile', upload.fields([{ name: 'profileImage', maxCount: 1 }, { name: 'serviceImages', maxCount: 5 }]), async (req, res) => {
-    let { user_id, businessName, vendorType, contactNumber, location, pricing } = req.body;
+    let { user_id, businessName, vendorType, contactNumber, location, pricing, serviceDescription } = req.body;
 
     if (!user_id || !mongoose.Types.ObjectId.isValid(user_id.trim())) {
         return res.status(400).json({ status: "error", message: "Invalid or missing User ID" });
     }
 
     try {
-        let updatedData = { businessName, vendorType, contactNumber, location, pricing };
+        let updatedData = { businessName, vendorType, contactNumber, location, pricing, serviceDescription };
 
         if (req.files.profileImage) {
             updatedData.profile_image = `${req.protocol}://${req.get("host")}/uploads/${req.files.profileImage[0].filename}`;
@@ -293,18 +293,38 @@ app.get('/api/vendor/dashboard/:user_id', async (req, res) => {
             data: {
                 username: vendor.username,
                 email: vendor.email,
-                business_name: vendor.businessName || "Not Set",
-                vendor_type: vendor.vendorType || "Not Set",
+                business_name: vendor.businessName || "",
+                vendor_type: vendor.vendorType || "",
                 earnings: vendor.earnings || 0,
                 profile_image: vendor.profile_image || "/profile.png",
                 upcoming_bookings: vendor.upcomingBookings || [],
                 ratings: vendor.ratings || 0,
-                service_images: vendor.service_images || []
+                service_images: vendor.service_images || [],
+                serviceDescription: vendor.description || ""
             }
         });
 
     } catch (error) {
         console.error("Vendor Dashboard Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+//✅ Specific type of vendors
+
+app.get('/api/vendors/type/:vendorType', async (req, res) => {
+    const { vendorType } = req.params;
+
+    try {
+        const vendors = await Vendor.find({ vendorType: vendorType });
+
+        if (vendors.length === 0) {
+            return res.status(404).json({ status: "error", message: "No vendors found for this type" });
+        }
+
+        res.status(200).json({ status: "success", data: vendors });
+    } catch (error) {
+        console.error("Fetch Vendors by Type Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });

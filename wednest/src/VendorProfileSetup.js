@@ -11,6 +11,7 @@ const VendorProfileSetup = () => {
     email: "",
     location: "",
     pricing: "",
+    serviceDescription: "",
     user_id: "",
   });
 
@@ -49,6 +50,7 @@ const VendorProfileSetup = () => {
             email: result.data.email || "",
             location: result.data.location || "",
             pricing: result.data.pricing || "",
+            serviceDescription: result.data.serviceDescription || "",
           }));
 
           if (result.data.profile_image) {
@@ -109,6 +111,7 @@ const VendorProfileSetup = () => {
     formData.append("contactNumber", vendorData.contactNumber);
     formData.append("location", vendorData.location);
     formData.append("pricing", vendorData.pricing);
+    formData.append("serviceDescription", vendorData.serviceDescription);
 
     if (profileImage) {
       formData.append("profileImage", profileImage);
@@ -155,7 +158,7 @@ const VendorProfileSetup = () => {
               <input type="text" name="vendorType" placeholder="Vendor Type" value={vendorData.vendorType} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
               <input type="tel" name="contactNumber" placeholder="Contact Number" value={vendorData.contactNumber} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
               <input type="text" name="location" placeholder="Business Location" value={vendorData.location} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
-              <input type="text" name="pricing" placeholder="Pricing Details" value={vendorData.pricing} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" />
+              <textarea name="serviceDescription" placeholder="Service Description" value={vendorData.serviceDescription} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" />
             </div>
 
             {/* Right Section - Profile & Service Images */}
