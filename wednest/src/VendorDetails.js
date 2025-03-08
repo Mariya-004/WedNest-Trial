@@ -36,7 +36,7 @@ const VendorDetails = () => {
       className="min-h-screen flex items-center justify-center bg-pink-100 p-6"
       style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
     >
-      <div className="max-w-4xl w-full bg-white p-6 rounded-lg shadow-md">
+      <div className="max-w-5xl w-full bg-white p-8 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-center">{vendor.businessName}</h1>
 
         <div className="flex flex-col md:flex-row items-center md:items-start mt-6">
@@ -44,14 +44,29 @@ const VendorDetails = () => {
           <img
             src={vendor.profile_image || "/placeholder.jpg"}
             alt={vendor.businessName}
-            className="w-48 h-48 object-cover rounded-lg shadow-md"
+            className="w-56 h-56 object-cover rounded-lg shadow-md"
           />
+          
           {/* Vendor Info */}
-          <div className="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
+          <div className="md:ml-8 mt-4 md:mt-0 text-center md:text-left flex-1">
             <p className="text-gray-600"><strong>Type:</strong> {vendor.vendorType}</p>
             <p className="text-gray-600"><strong>Location:</strong> {vendor.location}</p>
             <p className="text-green-600 font-bold"><strong>Pricing:</strong> ${vendor.pricing}</p>
             <p className="text-gray-700 mt-2">{vendor.serviceDescription}</p>
+            
+            {/* Contact Info */}
+            <div className="mt-4">
+              <h2 className="text-lg font-semibold">Contact Information</h2>
+              <p className="text-gray-600"><strong>Email:</strong> {vendor.email}</p>
+              <p className="text-gray-600"><strong>Phone:</strong> {vendor.phone}</p>
+            </div>
+
+            {/* Request to Avail Button */}
+            <button 
+              className="mt-6 px-6 py-3 bg-pink-500 text-white rounded-lg shadow-md hover:bg-pink-600 transition"
+            >
+              Request to Avail
+            </button>
           </div>
         </div>
 
@@ -65,7 +80,7 @@ const VendorDetails = () => {
                   key={index}
                   src={img}
                   alt={`Service ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md shadow"
+                  className="w-full h-40 object-cover rounded-md shadow"
                 />
               ))}
             </div>

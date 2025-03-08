@@ -137,7 +137,7 @@ const VendorProfileSetup = () => {
       }
     } catch (error) {
       console.error("❌ Error updating profile:", error);
-      setMessage("⚠️ Server error, please try again later.");
+      setMessage("⚠ Server error, please try again later.");
     } finally {
       setLoading(false);
     }
@@ -155,8 +155,20 @@ const VendorProfileSetup = () => {
             {/* Left Section - Inputs */}
             <div className="w-1/2 flex flex-col space-y-4">
               <input type="text" name="businessName" placeholder="Business Name" value={vendorData.businessName} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
-              <input type="text" name="vendorType" placeholder="Vendor Type" value={vendorData.vendorType} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              {/* Vendor Type Dropdown */}
+              <select name="vendorType" value={vendorData.vendorType} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required>
+                <option value="">Select Vendor Type</option>
+                <option value="Venue">Venue</option>
+                <option value="Catering">Catering</option>
+                <option value="Beauty and Wellness">Beauty and Wellness</option>
+                <option value="Events">Events</option>
+                <option value="Photography">Photography</option>
+                <option value="Car Dealers">Car Dealers</option>
+                <option value="Jewelry">Jewelry</option>
+                <option value="Designer">Designer</option>
+              </select>
               <input type="tel" name="contactNumber" placeholder="Contact Number" value={vendorData.contactNumber} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
+              <input type="number" name="pricing" placeholder="Pricing" value={vendorData.pricing} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
               <input type="text" name="location" placeholder="Business Location" value={vendorData.location} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" required />
               <textarea name="serviceDescription" placeholder="Service Description" value={vendorData.serviceDescription} onChange={handleChange} className="w-full p-3 border rounded-lg bg-gray-100 shadow-sm" />
             </div>
