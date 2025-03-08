@@ -16,6 +16,8 @@ import Designer from "./Designer";
 import Jewelry from "./Jewelry";
 import Cars from "./Cars";
 import Events from "./Events";
+import VendorDetails from "./VendorDetails"; 
+
 
 
 function App() {
@@ -38,6 +40,8 @@ function App() {
         <Route path="/jewelry" element={<Jewelry/>} />
         <Route path="/cars" element={<Cars/>} />
         <Route path="/events" element={<Events/>} />
+        <Route path="/vendor/:vendor_id" element={<VendorDetails/>} />
+
       </Routes>
     </Router>
   );
