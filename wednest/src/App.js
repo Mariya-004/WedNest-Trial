@@ -38,7 +38,7 @@ function App() {
         <Route path="/beauty" element={<Beauty/>} />
         <Route path="/designer" element={<Designer />} />
         <Route path="/jewelry" element={<Jewelry/>} />
-        <Route path="/cars" element={<Cars/>} />
+        <Route path="/car-dealers" element={<Cars/>} />
         <Route path="/events" element={<Events/>} />
         <Route path="/vendor/:vendor_id" element={<VendorDetails/>} />
 
