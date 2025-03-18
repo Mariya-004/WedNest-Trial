@@ -11,6 +11,9 @@ const connectDB = require('./db');
 const Couple = require('./models/Couple');
 const Vendor = require('./models/Vendor');
 const Request = require('./models/Request');
+const Cart = require('./models/Cart');
+
+
 
 dotenv.config();
 const app = express();
@@ -409,5 +412,81 @@ app.get("/api/vendor/requests/:vendor_id", async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+
+
+
+// ✅ ADD TO CART API
+app.post('/api/cart/add', async (req, res) => {
+    const { couple_id, vendor_id } = req.body;
+
+    if (!couple_id || !vendor_id) {
+        return res.status(400).json({ status: "error", message: "Couple ID and Vendor ID are required" });
+    }
+
+    try {
+        const existingRequest = await Request.findOne({ couple_id, vendor_id });
+
+        if (!existingRequest) {
+            return res.status(404).json({ status: "error", message: "No request found for this vendor" });
+        }
+
+        if (existingRequest.status === 'Accepted' || existingRequest.status === 'Pending') {
+            return res.status(400).json({ status: "error", message: "Vendor already requested or accepted" });
+        }
+
+        existingRequest.status = 'Pending';
+        await existingRequest.save();
+
+        res.status(200).json({ status: "success", message: "Added to cart" });
+    } catch (error) {
+        console.error("Add to Cart Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+// ✅ FETCH CART ITEMS API
+app.get('/api/cart/:couple_id', async (req, res) => {
+    const { couple_id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(couple_id)) {
+        return res.status(400).json({ status: "error", message: "Invalid Couple ID" });
+    }
+
+    try {
+        const requests = await Request.find({ couple_id })
+            .populate('vendor_id', 'username businessName vendorType')
+            .select('vendor_id status');
+
+        res.status(200).json({ status: "success", data: requests });
+    } catch (error) {
+        console.error("Fetch Cart Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+// ✅ REMOVE FROM CART API
+app.delete('/api/cart/remove', async (req, res) => {
+    const { couple_id, vendor_id } = req.body;
+
+    if (!couple_id || !vendor_id) {
+        return res.status(400).json({ status: "error", message: "Couple ID and Vendor ID are required" });
+    }
+
+    try {
+        const request = await Request.findOneAndDelete({ couple_id, vendor_id, status: 'Pending' });
+
+        if (!request) {
+            return res.status(404).json({ status: "error", message: "No pending request found for this vendor" });
+        }
+
+        res.status(200).json({ status: "success", message: "Removed from cart" });
+    } catch (error) {
+        console.error("Remove from Cart Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
+
+
 // ✅ SERVER START
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));

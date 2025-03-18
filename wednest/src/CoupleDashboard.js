@@ -8,7 +8,7 @@ export default function CoupleDashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      try {
+      try { 
         const response = await fetch(`http://localhost:3000/api/couple/dashboard/${user_id}`);
         const data = await response.json();
 
@@ -44,7 +44,7 @@ export default function CoupleDashboard() {
           <img src="WEDNEST_LOGO.png" alt="WedNest Logo" className="h-24 w-auto" />
           <div className="flex gap-6">
             <button onClick={() => navigate("/couple-home")}  className="text-lg">Home</button>
-            <span className="text-lg">🛒</span>
+            <button onClick={() => navigate("/cart")} className="text-lg">🛒</button>            
             <span className="text-lg">👤</span>
           </div>
         </header>
