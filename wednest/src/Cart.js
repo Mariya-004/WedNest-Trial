@@ -1,82 +1,199 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+  const couple_id = localStorage.getItem("user_id");
+  const authToken = localStorage.getItem("authToken");
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
+
+  const [cartItems, setCartItems] = useState([]);
   const [budget, setBudget] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(storedCart);
-    fetchBudget();
-  }, []);
+    const fetchCartWithVendorDetails = async () => {
+      try {
+        const [cartRes, budgetRes] = await Promise.all([
+          fetch(`${API_URL}/api/cart/${couple_id}`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }),
+          fetch(`${API_URL}/api/couple/budget/${couple_id}`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }),
+        ]);
 
-  const fetchBudget = async () => {
+        const cartData = await cartRes.json();
+        const budgetData = await budgetRes.json();
+
+        if (budgetData.status === "success") {
+          setBudget(budgetData.data);
+        }
+
+        if (cartData.status === "success" && cartData.data.length > 0) {
+          const updatedCart = await Promise.all(
+            cartData.data.map(async (item) => {
+              try {
+                const vendorRes = await fetch(
+                  `${API_URL}/api/vendor/details/${item.vendor_id._id}`,
+                  {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                  }
+                );
+                const vendorData = await vendorRes.json();
+
+                if (vendorData.status === "success") {
+                  return { ...item, vendor_id: vendorData.data };
+                }
+              } catch (error) {
+                console.error("Error fetching vendor details: ", error);
+              }
+              return item;
+            })
+          );
+
+          setCartItems(updatedCart);
+        }
+      } catch (err) {
+        console.error("Error fetching cart or budget:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCartWithVendorDetails();
+  }, [API_URL, couple_id, authToken]);
+
+  const handleRemoveItem = async (vendor_id) => {
     try {
-      const response = await fetch("/api/couple/budget");
-      const data = await response.json();
-      setBudget(data.budget || 0);
+      const res = await fetch(`${API_URL}/api/cart/remove`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ couple_id, vendor_id }),
+      });
+
+      const data = await res.json();
+      if (data.status === "success") {
+        setCartItems((prev) =>
+          prev.filter((item) => item.vendor_id._id !== vendor_id)
+        );
+        setMessage({ type: "success", text: "Item removed from cart." });
+      } else {
+        setMessage({ type: "error", text: data.message });
+      }
     } catch (error) {
-      console.error("Failed to fetch budget:", error);
+      setMessage({ type: "error", text: "Error removing item." });
     }
   };
 
-  const handleRemove = (index) => {
-    const newCart = cart.filter((_, i) => i !== index);
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
+  const totalCost = cartItems.reduce((acc, item) => acc + item.price, 0);
+
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return "/placeholder.jpg";
+    return imgPath.startsWith("http") ? imgPath : `${API_URL}/${imgPath}`;
   };
 
+  if (loading) {
+    return <p className="text-center text-gray-500 pt-28">Loading cart...</p>;
+  }
+
   return (
-    <div className="min-h-screen bg-pink-50 p-6" style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover" }}>
-      {/* Header */}
-      <header className="bg-orange-300 h-20 p-4 flex justify-between items-center fixed w-full top-0 left-0 z-10 shadow-md">
-        <img src="/WEDNEST_LOGO.png" alt="WedNest Logo" className="h-16 w-auto" />
-        <div className="flex gap-8 text-lg">
-          <button onClick={() => navigate("/couple-home")} className="text-lg">Home</button>
-          <button onClick={() => navigate("/settings")} className="text-lg">Settings</button>
-          <button className="text-lg">🛒</button>
-          <button onClick={() => navigate("/couple-dashboard")} className="text-lg">👤</button>
+    <div className="relative">
+      <header className="bg-orange-300 h-24 p-6 flex justify-between items-center fixed w-full top-0 left-0 z-10 shadow-lg">
+        <img src="/WEDNEST_LOGO.png" alt="WedNest Logo" className="h-20 w-auto" />
+        <div className="flex gap-10 text-2xl">
+          <button type="button" onClick={() => navigate("/couple-home")}>
+            <img src="/Home.png" alt="home" className="h-5 w-auto" />
+          </button>
+          <button type="button" onClick={() => navigate("/Cart")} className="text-3xl">
+            🛒
+          </button>
+          <button type="button" onClick={() => navigate("/couple-dashboard")} className="text-3xl">
+            👤
+          </button>
         </div>
       </header>
 
-      {/* Budget Display */}
-      <div className="pt-24 flex justify-end pr-10">
-        <span className="bg-purple-500 text-white px-4 py-2 rounded-lg text-lg font-bold">Budget: {budget.toLocaleString()} Rs</span>
-      </div>
+      <div
+        className="min-h-screen bg-pink-100 pt-36 pb-10 px-4 sm:px-8"
+        style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover" }}
+      >
+        <div className="max-w-5xl mx-auto bg-white p-8 rounded-lg shadow-md">
+          <h1 className="text-3xl font-bold text-center mb-6">Your Cart 🛒</h1>
 
-      {/* Cart Items */}
-      <div className="max-w-5xl mx-auto mt-6">
-        <h1 className="text-3xl font-bold text-center mb-6">Wedding Cart</h1>
-        {cart.length === 0 ? (
-          <p className="text-center text-gray-500">Your cart is empty.</p>
-        ) : (
-          cart.map((item, index) => (
-            <div key={index} className="bg-white shadow-lg p-6 rounded-xl flex items-center gap-6 mb-6">
-              <img src={item.image || "/placeholder.jpg"} alt={item.businessName} className="w-36 h-36 object-cover rounded-lg" />
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold">{item.businessName}</h2>
-                <p className="text-gray-600">Location: {item.location}</p>
-                <p className="text-gray-600">Price: {item.pricing.toLocaleString()} Rs</p>
-                <p className="text-gray-600">{item.details}</p>
-              </div>
-              <div className="flex flex-col gap-2 items-end">
-                <span
-                  className={`px-4 py-2 rounded-lg text-white font-bold ${item.status === "Confirmed" ? "bg-green-500" : "bg-yellow-500"}`}
-                >
-                  {item.status === "Confirmed" ? "Confirmed by Vendor" : "Waiting for Confirmation"}
-                </span>
-                <button
-                  onClick={() => handleRemove(index)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600"
-                >
-                  {item.status === "Confirmed" ? "Remove" : "Remove Request"}
-                </button>
-              </div>
+          {message && (
+            <div
+              className={`text-center mb-4 font-semibold ${
+                message.type === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {message.text}
             </div>
-          ))
-        )}
+          )}
+
+          {cartItems.length === 0 ? (
+            <p className="text-center text-gray-600">Your cart is empty.</p>
+          ) : (
+            <>
+              <div className="grid gap-4">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.vendor_id._id}
+                    className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-sm cursor-pointer hover:bg-gray-200 transition"
+                    onClick={() => navigate(`/vendor/${item.vendor_id._id}`)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={getImageUrl(item.vendor_id.service_images[0])}
+                        alt={item.vendor_id.businessName}
+                        className="w-16 h-16 object-cover rounded-full shadow"
+                      />
+                      <div>
+                        <p className="text-lg font-semibold">
+                          {item.vendor_id.businessName}
+                        </p>
+                        <p className="text-gray-600">{item.vendor_id.vendorType}</p>
+                        <p className="text-green-600 font-bold">${item.price}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Status: {item.status}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveItem(item.vendor_id._id);
+                      }}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow"
+                      disabled={item.status === "Confirmed by Vendor"}
+                    >
+                      {item.status === "Confirmed by Vendor" ? "Locked" : "Remove"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 bg-gray-50 p-6 rounded-lg shadow-inner">
+                <h2 className="text-xl font-bold text-center mb-4">Cart Summary</h2>
+                <p className="text-lg text-center">
+                  Total Cost: <span className="font-bold">${totalCost}</span>
+                </p>
+                <p className="text-lg text-center mt-2">
+                  Your Budget: <span className="font-bold">${budget}</span>
+                </p>
+                {totalCost > budget && (
+                  <p className="text-center text-red-600 mt-2 font-semibold">
+                    Warning: You are over budget by ${totalCost - budget}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

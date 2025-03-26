@@ -15,6 +15,9 @@ const Cart = require('./models/Cart');
 
 
 
+
+
+
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -134,7 +137,7 @@ app.put('/api/couple/profile', upload.single('profileImage'), async (req, res) =
         return res.status(400).json({ status: "error", message: "User ID is required" });
     }
 
-    // Trim user_id and validate format
+    // Validate user_id format
     user_id = user_id.trim();
     if (!mongoose.Types.ObjectId.isValid(user_id)) {
         return res.status(400).json({ status: "error", message: "Invalid User ID format" });
@@ -149,9 +152,7 @@ app.put('/api/couple/profile', upload.single('profileImage'), async (req, res) =
         };
 
         if (req.file) {
-            const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-            updatedData.profile_image = imageUrl;
-            
+            updatedData.profile_image = req.file.path; // Cloudinary URL
         }
 
         const updatedCouple = await Couple.findByIdAndUpdate(user_id, updatedData, { new: true });
@@ -166,6 +167,7 @@ app.put('/api/couple/profile', upload.single('profileImage'), async (req, res) =
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+
 
 // ✅ GET COUPLE PROFILE API
 app.get('/api/couple/profile/:user_id', async (req, res) => {
@@ -234,11 +236,11 @@ app.put('/api/vendor/profile', upload.fields([{ name: 'profileImage', maxCount: 
         let updatedData = { businessName, vendorType, contactNumber, location, pricing, serviceDescription };
 
         if (req.files.profileImage) {
-            updatedData.profile_image = `${req.protocol}://${req.get("host")}/uploads/${req.files.profileImage[0].filename}`;
+            updatedData.profile_image = req.files.profileImage[0].path; // Cloudinary URL
         }
 
         if (req.files.serviceImages) {
-            updatedData.service_images = req.files.serviceImages.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`);
+            updatedData.service_images = req.files.serviceImages.map(file => file.path);
         }
 
         const updatedVendor = await Vendor.findByIdAndUpdate(user_id.trim(), updatedData, { new: true });
@@ -253,6 +255,7 @@ app.put('/api/vendor/profile', upload.fields([{ name: 'profileImage', maxCount: 
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+
 
 // ✅ GET VENDOR PROFILE API
 app.get('/api/vendor/profile/:vendor_id', async (req, res) => {
@@ -354,7 +357,6 @@ app.get('/api/vendor/details/:vendor_id', async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-
 // ✅ SEND REQUEST API
 app.post('/api/request', async (req, res) => {
     const {couple_id, vendor_id}=req.body;
@@ -394,7 +396,7 @@ app.get("/api/couple/requests/:couple_id", async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-
+// ✅ GET REQUESTS BY VENDOR ID
 app.get("/api/vendor/requests/:vendor_id", async (req, res) => {
     const { vendor_id } = req.params;
 
@@ -404,88 +406,231 @@ app.get("/api/vendor/requests/:vendor_id", async (req, res) => {
 
     try {
         const requests = await Request.find({ vendor_id })
-            .populate("couple_id", "username email");
-
-        res.status(200).json({ status: "success", data: requests });
-    } catch (error) {
-        console.error("Fetch Requests Error:", error);
-        res.status(500).json({ status: "error", message: "Server error" });
-    }
-});
-
-
-
-// ✅ ADD TO CART API
-app.post('/api/cart/add', async (req, res) => {
-    const { couple_id, vendor_id } = req.body;
-
+          .populate('couple_id', 'username email wedding_date');
+    
+        const formattedRequests = requests.map(request => ({
+          ...request.toObject(),
+          event_date: request.couple_id?.wedding_date || 'Not Provided',
+        }));
+    
+        res.status(200).json({ status: 'success', data: formattedRequests });
+      } catch (error) {
+        console.error('Fetch Requests Error:', error);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+      }
+    });
+// ✅ to check reques exist or not
+app.get("/api/request-id", async (req, res) => {
+    const { couple_id, vendor_id } = req.query;
+  
     if (!couple_id || !vendor_id) {
-        return res.status(400).json({ status: "error", message: "Couple ID and Vendor ID are required" });
+      return res.status(400).json({ status: "error", message: "couple_id and vendor_id are required" });
     }
-
+  
+    if (!mongoose.Types.ObjectId.isValid(couple_id) || !mongoose.Types.ObjectId.isValid(vendor_id)) {
+      return res.status(400).json({ status: "error", message: "Invalid couple_id or vendor_id format" });
+    }
+  
     try {
-        const existingRequest = await Request.findOne({ couple_id, vendor_id });
-
-        if (!existingRequest) {
-            return res.status(404).json({ status: "error", message: "No request found for this vendor" });
-        }
-
-        if (existingRequest.status === 'Accepted' || existingRequest.status === 'Pending') {
-            return res.status(400).json({ status: "error", message: "Vendor already requested or accepted" });
-        }
-
-        existingRequest.status = 'Pending';
-        await existingRequest.save();
-
-        res.status(200).json({ status: "success", message: "Added to cart" });
+      const request = await Request.findOne({ couple_id, vendor_id });
+  
+      if (!request) {
+        return res.status(404).json({ status: "error", message: "No request found for given couple_id and vendor_id" });
+      }
+  
+      res.status(200).json({
+        status: "success",
+        request_id: request._id,
+        data: request,
+      });
     } catch (error) {
-        console.error("Add to Cart Error:", error);
-        res.status(500).json({ status: "error", message: "Server error" });
+      console.error("🚨 Fetch Request ID Error:", error);
+      res.status(500).json({ status: "error", message: "Server error" });
     }
-});
+  });
+  
+// ✅ ACCEPT/DECLINE REQUEST API
+app.put('/api/request/:request_id', async (req, res) => {
+    const { request_id } = req.params;
+    const { status } = req.body;
 
-// ✅ FETCH CART ITEMS API
-app.get('/api/cart/:couple_id', async (req, res) => {
-    const { couple_id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(couple_id)) {
-        return res.status(400).json({ status: "error", message: "Invalid Couple ID" });
+    if (!mongoose.Types.ObjectId.isValid(request_id.trim())) {
+        return res.status(400).json({ status: "error", message: "Invalid Request ID format" });
     }
 
-    try {
-        const requests = await Request.find({ couple_id })
-            .populate('vendor_id', 'username businessName vendorType')
-            .select('vendor_id status');
-
-        res.status(200).json({ status: "success", data: requests });
-    } catch (error) {
-        console.error("Fetch Cart Error:", error);
-        res.status(500).json({ status: "error", message: "Server error" });
-    }
-});
-
-// ✅ REMOVE FROM CART API
-app.delete('/api/cart/remove', async (req, res) => {
-    const { couple_id, vendor_id } = req.body;
-
-    if (!couple_id || !vendor_id) {
-        return res.status(400).json({ status: "error", message: "Couple ID and Vendor ID are required" });
+    if (!["Accepted", "Declined"].includes(status)) {
+        return res.status(400).json({ status: "error", message: "Invalid status. Must be 'Accepted' or 'Declined'" });
     }
 
     try {
-        const request = await Request.findOneAndDelete({ couple_id, vendor_id, status: 'Pending' });
+        const request = await Request.findByIdAndUpdate(request_id.trim(), { status }, { new: true });
 
         if (!request) {
-            return res.status(404).json({ status: "error", message: "No pending request found for this vendor" });
+            return res.status(404).json({ status: "error", message: "Request not found" });
         }
 
-        res.status(200).json({ status: "success", message: "Removed from cart" });
+        res.status(200).json({ status: "success", message: `Request ${status.toLowerCase()} successfully`, data: request });
+    } catch (error) {
+        console.error("Update Request Status Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+// DELETE endpoint to remove a specific request by its ID
+app.delete('/api/vendor/requests/:request_id', async (req, res) => {
+    const { request_id } = req.params;
+  
+    // Validate the request_id to ensure it's a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(request_id)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid Request ID' });
+    }
+  
+    try {
+      // Attempt to find and delete the request with the given ID
+      const deletedRequest = await Request.findByIdAndDelete(request_id);
+  
+      if (!deletedRequest) {
+        return res.status(404).json({ status: 'error', message: 'Request not found' });
+      }
+  
+      res.status(200).json({ status: 'success', message: 'Request deleted successfully' });
+    } catch (error) {
+      console.error('Delete Request Error:', error);
+      res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+  });
+// ✅ ADD TO CART API
+  app.post("/api/cart/add", async (req, res) => {
+    const { couple_id, vendor_id, service_type, price, request_id } = req.body;
+  
+    if (!couple_id || !vendor_id || !service_type || !price || !request_id) {
+      return res.status(400).json({ status: "error", message: "All fields are required" });
+    }
+  
+    if (
+      !mongoose.Types.ObjectId.isValid(couple_id) ||
+      !mongoose.Types.ObjectId.isValid(vendor_id) ||
+      !mongoose.Types.ObjectId.isValid(request_id)
+    ) {
+      return res.status(400).json({ status: "error", message: "Invalid ID format" });
+    }
+  
+    const parsedPrice = Number(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      return res.status(400).json({ status: "error", message: "Invalid price format" });
+    }
+  
+    try {
+      let cart = await Cart.findOne({ couple_id });
+  
+      if (!cart) {
+        cart = new Cart({ couple_id, items: [], total_budget: 0 });
+      }
+  
+      cart.items.push({
+        vendor_id,
+        service_type,
+        price: parsedPrice,
+        request_id,
+        status: "Waiting for Confirmation",
+      });
+  
+      cart.total_budget += parsedPrice;
+  
+      await cart.save();
+  
+      res.status(201).json({ status: "success", message: "Item added to cart", data: cart });
+    } catch (error) {
+      console.error("🚨 Add to Cart Error:", error);
+      res.status(500).json({ status: "error", message: "Server error" });
+    }
+  });
+  
+// get couple's budget api
+app.get("/api/couple/budget/:couple_id", async (req, res) => {
+    const {couple_id} =req.params;
+    if (!couple_id) {
+        return res.status(400).json({ status: "error", message: "Couple ID is required" });
+    }
+    try {
+        const couple = await Couple.findById(couple_id);
+        if (!couple) {
+            return res.status(404).json({ status: "error", message: "Couple not found" });
+        }
+        res.status(200).json({ status: "success", data: couple.budget });
+    } catch (error) {
+        console.error("Get Couple Budget Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+})
+// get cart api
+app.get('/api/cart/:couple_id', async (req, res) => {
+    const { couple_id } = req.params;
+  
+    if (!mongoose.Types.ObjectId.isValid(couple_id.trim())) {
+      return res.status(400).json({ status: "error", message: "Invalid Couple ID" });
+    }
+  
+    try {
+      const cart = await Cart.findOne({ couple_id })
+        .populate('items.vendor_id', 'username businessName vendorType');
+  
+      if (!cart || cart.items.length === 0) {
+        return res.status(200).json({ status: "success", data: [], message: "No items in cart." });
+      }
+  
+      res.status(200).json({ status: "success", data: cart.items });
+    } catch (error) {
+      console.error("Fetch Cart Error:", error);
+      res.status(500).json({ status: "error", message: "Server error" });
+    }
+  });
+
+  // delete item from cart api
+  app.delete('/api/cart/remove', async (req, res) => {
+    const { couple_id, vendor_id } = req.body;
+
+    if (!couple_id || !vendor_id) {
+        return res.status(400).json({ status: "error", message: "Couple ID and Vendor ID are required" });
+    }
+
+    try {
+        // Find the couple's cart
+        const cart = await Cart.findOne({ couple_id });
+
+        if (!cart) {
+            return res.status(404).json({ status: "error", message: "Cart not found for this couple" });
+        }
+
+        // Find the item inside the cart
+        const item = cart.items.find(
+            (i) => i.vendor_id.toString() === vendor_id.toString()
+        );
+
+        if (!item) {
+            return res.status(404).json({ status: "error", message: "Item not found in cart" });
+        }
+
+        // Prevent removal if vendor has confirmed
+        if (item.status === "Confirmed by Vendor") {
+            return res.status(400).json({ status: "error", message: "Cannot remove item confirmed by vendor" });
+        }
+
+        // Remove the item
+        cart.items = cart.items.filter(
+            (i) => i.vendor_id.toString() !== vendor_id.toString()
+        );
+
+        // Recalculate total budget
+        cart.total_budget = cart.items.reduce((total, curr) => total + curr.price, 0);
+
+        await cart.save();
+
+        res.status(200).json({ status: "success", message: "Item removed from cart" });
     } catch (error) {
         console.error("Remove from Cart Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-
 
 
 // ✅ SERVER START
