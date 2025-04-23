@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'; // Add this import
+
+// Register the required components
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function CoupleDashboard() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [vendorRequests, setVendorRequests] = useState([]);
+  const [cartData, setCartData] = useState([]); // Add this state
   const user_id = localStorage.getItem("user_id");
   const API_URL = (process.env.REACT_APP_API_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -12,7 +18,9 @@ export default function CoupleDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/couple/dashboard/${user_id}`);
+        const response = await fetch(`${API_URL}/api/couple/dashboard/${user_id}`, {
+         // headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` }, // Add Authorization header
+        });
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Error fetching dashboard: ${errorText}`);
@@ -35,7 +43,9 @@ export default function CoupleDashboard() {
   useEffect(() => {
     const fetchVendorRequests = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/couple/requests/${user_id}`);
+        const response = await fetch(`${API_URL}/api/couple/requests/${user_id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("coupleAuthToken")}` }, // Add Authorization header
+        });
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Error fetching vendor requests: ${errorText}`);
@@ -54,6 +64,31 @@ export default function CoupleDashboard() {
     if (user_id) fetchVendorRequests();
   }, [user_id]);
 
+  // Fetch cart data
+  useEffect(() => {
+    const fetchCartData = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/cart/${user_id}`, {
+          //headers: { Authorization: `Bearer ${localStorage.getItem("coupleAuthToken")}` }, // Add Authorization header
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error fetching cart data: ${errorText}`);
+        }
+        const data = await response.json();
+        if (data.status === "success") {
+          setCartData(data.data);
+        } else {
+          console.error("Error fetching cart data:", data.message);
+        }
+      } catch (error) {
+        console.error("API Error (Cart):", error);
+      }
+    };
+
+    if (user_id) fetchCartData();
+  }, [user_id]);
+
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
@@ -61,6 +96,45 @@ export default function CoupleDashboard() {
 
   const handleEditProfile = () => {
     navigate("/couple-profile");
+  };
+
+  const calculateCountdown = (weddingDate) => {
+    const now = new Date();
+    const wedding = new Date(weddingDate);
+    const timeDifference = wedding - now;
+    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    return days > 0 ? `${days} days left` : "The big day is here!";
+  };
+
+  // Function to get pie chart data
+  const getPieChartData = () => {
+    const serviceAmounts = cartData.reduce((acc, item) => {
+      const service = item.vendor_id.vendorType;
+      const amount = item.price;
+      if (acc[service]) {
+        acc[service] += amount;
+      } else {
+        acc[service] = amount;
+      }
+      return acc;
+    }, {});
+
+    return {
+      labels: Object.keys(serviceAmounts),
+      datasets: [
+        {
+          data: Object.values(serviceAmounts),
+          backgroundColor: [
+            "#FF6384",
+            "#36A2EB",
+            "#FFCE56",
+            "#4BC0C0",
+            "#9966FF",
+            "#FF9F40",
+          ],
+        },
+      ],
+    };
   };
 
   return (
@@ -159,6 +233,23 @@ export default function CoupleDashboard() {
                     : "Not Set"}
                 </p>
               </div>
+
+              {/* Wedding Countdown Card */}
+              <div
+                className="p-6 rounded-2xl text-center text-gray-900 shadow-lg flex flex-col items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, #e0f7fa, #b2ebf2)",
+                  height: "300px",
+                  width: "100%",
+                }}
+              >
+                <h2 className="text-2xl font-bold mb-4">Wedding Countdown</h2>
+                <p className="text-lg">
+                  {dashboardData?.wedding_date
+                    ? calculateCountdown(dashboardData.wedding_date)
+                    : "Wedding date not set"}
+                </p>
+              </div>
             </div>
 
             {/* Vendors Booked Section */}
@@ -184,6 +275,24 @@ export default function CoupleDashboard() {
                 </ul>
               ) : (
                 <p className="text-lg text-center">No vendors booked yet</p>
+              )}
+            </div>
+
+            {/* Pie Chart Section */}
+            <div
+              className="p-6 rounded-2xl text-gray-900 shadow-lg flex flex-col items-center"
+              style={{
+                background: "linear-gradient(135deg, #fce4ec, #fdeff9)",
+                height: "500px",
+                width: "100%",
+                overflowY: "auto",
+              }}
+            >
+              <h2 className="text-2xl font-bold mb-4">Spending by Service</h2>
+              {cartData.length > 0 ? (
+                <Pie data={getPieChartData()} />
+              ) : (
+                <p className="text-lg text-center">No spending data available</p>
               )}
             </div>
           </div>

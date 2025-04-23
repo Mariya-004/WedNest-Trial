@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 const Beauty = () => {
   const [vendors, setVendors] = useState([]);
   const navigate = useNavigate();
-
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000"; 
   useEffect(() => {
-    fetch("http://localhost:3000/api/vendors/type/Beauty")
+    fetch(`${API_URL}/api/vendors/type/Beauty and Wellness`)
       .then((response) => response.json())
       .then((data) => {
         if (data.status === "success") setVendors(data.data);
@@ -16,6 +16,20 @@ const Beauty = () => {
   }, []);
 
   return (
+    <div className="relative">
+      {/* Header */}
+      <header className="bg-orange-300 h-24 p-6 flex justify-between items-center fixed w-full top-0 left-0 z-10 shadow-lg">
+        <img src="/WEDNEST_LOGO.png" alt="WedNest Logo" className="h-20 w-auto" />
+        <div className="flex gap-10 text-2xl">
+          <button onClick={() => navigate("/couple-home")} className="text-lg">
+            <img src="/Home.png" alt="home" className="h-5 w-auto" />
+          </button>
+          <button onClick={() => navigate("/Cart")}className="text-3xl">🛒</button>
+          <button onClick={() => navigate("/couple-dashboard")} className="text-3xl">
+            👤
+          </button>
+        </div>
+      </header>
     <div className="min-h-screen flex items-center justify-center bg-pink-100 p-6"
       style={{ backgroundImage: "url('/bg.png')", backgroundSize: "cover", backgroundPosition: "center" }}
     >
@@ -36,6 +50,7 @@ const Beauty = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

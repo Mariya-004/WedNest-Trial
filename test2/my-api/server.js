@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
@@ -13,16 +12,11 @@ const Vendor = require('./models/Vendor');
 const Request = require('./models/Request');
 const Cart = require('./models/Cart');
 
-
-
-
-
-
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || 'your_jwt_secret';
-
+const URL = process.env.BACKEND_URL || 'http://localhost:3000';
 // Connect to database
 connectDB();
 app.use(express.json());
@@ -45,7 +39,6 @@ const upload = multer({ storage });
 
 // Middleware for multiple images (max 5)
 const uploadMultiple = upload.array('serviceImages', 5);
-
 
 // ✅ REGISTER API
 app.post('/api/register', async (req, res) => {
@@ -396,7 +389,7 @@ app.get("/api/couple/requests/:couple_id", async (req, res) => {
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-// ✅ GET REQUESTS BY VENDOR ID
+
 app.get("/api/vendor/requests/:vendor_id", async (req, res) => {
     const { vendor_id } = req.params;
 
@@ -406,20 +399,15 @@ app.get("/api/vendor/requests/:vendor_id", async (req, res) => {
 
     try {
         const requests = await Request.find({ vendor_id })
-          .populate('couple_id', 'username email wedding_date');
-    
-        const formattedRequests = requests.map(request => ({
-          ...request.toObject(),
-          event_date: request.couple_id?.wedding_date || 'Not Provided',
-        }));
-    
-        res.status(200).json({ status: 'success', data: formattedRequests });
-      } catch (error) {
-        console.error('Fetch Requests Error:', error);
-        res.status(500).json({ status: 'error', message: 'Server error' });
-      }
-    });
-// ✅ to check reques exist or not
+            .populate("couple_id", "username email wedding_date");
+
+        res.status(200).json({ status: "success", data: requests });
+    } catch (error) {
+        console.error("Fetch Requests Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
 app.get("/api/request-id", async (req, res) => {
     const { couple_id, vendor_id } = req.query;
   
@@ -463,43 +451,27 @@ app.put('/api/request/:request_id', async (req, res) => {
     }
 
     try {
-        const request = await Request.findByIdAndUpdate(request_id.trim(), { status }, { new: true });
-
-        if (!request) {
-            return res.status(404).json({ status: "error", message: "Request not found" });
+        let request;
+        if (status === "Declined") {
+            request = await Request.findByIdAndDelete(request_id.trim());
+            if (!request) {
+                return res.status(404).json({ status: "error", message: "Request not found" });
+            }
+            return res.status(200).json({ status: "success", message: "Request declined and deleted successfully" });
+        } else {
+            request = await Request.findByIdAndUpdate(request_id.trim(), { status }, { new: true });
+            if (!request) {
+                return res.status(404).json({ status: "error", message: "Request not found" });
+            }
+            return res.status(200).json({ status: "success", message: `Request ${status.toLowerCase()} successfully`, data: request });
         }
-
-        res.status(200).json({ status: "success", message: `Request ${status.toLowerCase()} successfully`, data: request });
-    } catch (error) {
+    } catch (error) { // Corrected the syntax error here
         console.error("Update Request Status Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
-// DELETE endpoint to remove a specific request by its ID
-app.delete('/api/vendor/requests/:request_id', async (req, res) => {
-    const { request_id } = req.params;
-  
-    // Validate the request_id to ensure it's a valid MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(request_id)) {
-      return res.status(400).json({ status: 'error', message: 'Invalid Request ID' });
-    }
-  
-    try {
-      // Attempt to find and delete the request with the given ID
-      const deletedRequest = await Request.findByIdAndDelete(request_id);
-  
-      if (!deletedRequest) {
-        return res.status(404).json({ status: 'error', message: 'Request not found' });
-      }
-  
-      res.status(200).json({ status: 'success', message: 'Request deleted successfully' });
-    } catch (error) {
-      console.error('Delete Request Error:', error);
-      res.status(500).json({ status: 'error', message: 'Server error' });
-    }
-  });
 // ✅ ADD TO CART API
-  app.post("/api/cart/add", async (req, res) => {
+app.post("/api/cart/add", async (req, res) => {
     const { couple_id, vendor_id, service_type, price, request_id } = req.body;
   
     if (!couple_id || !vendor_id || !service_type || !price || !request_id) {
@@ -625,13 +597,36 @@ app.get('/api/cart/:couple_id', async (req, res) => {
 
         await cart.save();
 
-        res.status(200).json({ status: "success", message: "Item removed from cart" });
+        // Remove the associated request
+        await Request.findOneAndDelete({ couple_id, vendor_id });
+
+        res.status(200).json({ status: "success", message: "Item removed from cart and associated request deleted" });
     } catch (error) {
         console.error("Remove from Cart Error:", error);
         res.status(500).json({ status: "error", message: "Server error" });
     }
 });
+// ✅ GET REQUEST STATUS API
+app.get('/api/request/status/:request_id', async (req, res) => {
+    const { request_id } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(request_id.trim())) {
+        return res.status(400).json({ status: "error", message: "Invalid Request ID format" });
+    }
+
+    try {
+        const request = await Request.findById(request_id.trim());
+
+        if (!request) {
+            return res.status(404).json({ status: "error", message: "Request not found" });
+        }
+
+        res.status(200).json({ status: "success", data: { status: request.status } });
+    } catch (error) {
+        console.error("Get Request Status Error:", error);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
 
 // ✅ SERVER START
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));

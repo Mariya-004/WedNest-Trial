@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 const Venue = () => {
   const [vendors, setVendors] = useState([]);
   const navigate = useNavigate(); // Hook for navigation
-
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
   useEffect(() => {
-    fetch("http://localhost:3000/api/vendors/type/Venue")
+    fetch(`${API_URL}/api/vendors/type/Venue`)
       .then((response) => response.json())
       .then((data) => {
         if (data.status === "success") {
@@ -19,6 +19,20 @@ const Venue = () => {
   }, []);
 
   return (
+    <div className="relative">
+      {/* Header */}
+      <header className="bg-orange-300 h-24 p-6 flex justify-between items-center fixed w-full top-0 left-0 z-10 shadow-lg">
+        <img src="/WEDNEST_LOGO.png" alt="WedNest Logo" className="h-20 w-auto" />
+        <div className="flex gap-10 text-2xl">
+          <button onClick={() => navigate("/couple-home")} className="text-lg">
+            <img src="/Home.png" alt="home" className="h-5 w-auto" />
+          </button>
+          <button onClick={() => navigate("/Cart")}className="text-3xl">🛒</button>
+          <button onClick={() => navigate("/couple-dashboard")} className="text-3xl">
+            👤
+          </button>
+        </div>
+      </header>
     <div
       className="min-h-screen flex items-center justify-center bg-pink-100 p-6"
       style={{
@@ -57,6 +71,7 @@ const Venue = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

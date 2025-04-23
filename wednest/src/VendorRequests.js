@@ -1,51 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function VendorRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
   const navigate = useNavigate();
 
-  const authToken = localStorage.getItem('authToken');
-  const vendor_id = localStorage.getItem('user_id');
+  const vendor_id = localStorage.getItem("user_id");
 
   useEffect(() => {
-    if (!authToken || !vendor_id) {
-      navigate('/login');
-      return;
-    }
-
     const fetchRequests = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/vendor/requests/${vendor_id}`,
-          {
-            headers: { Authorization: `Bearer ${authToken}` },
-          }
+          `https://wednest-backend-0ti8.onrender.com/api/vendor/requests/${vendor_id}`
         );
         const data = await response.json();
 
-        if (response.ok && data.status === 'success') {
+        if (response.ok && data.status === "success") {
           setRequests(data.data);
         } else {
-          console.error('Failed to fetch requests:', data.message);
+          console.error("Failed to fetch requests:", data.message);
         }
       } catch (error) {
-        console.error('Error fetching requests:', error);
+        console.error("Error fetching requests:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchRequests();
-  }, [authToken, vendor_id, navigate]);
+  }, [vendor_id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-xl">
+        Loading requests...
+      </div>
+    );
+  }
 
   const handleAction = async (requestId, action) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/request/${requestId}`, {
+      const response = await fetch(`https://wednest-backend-0ti8.onrender.com/api/request/${requestId}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: action === "accept" ? "Accepted" : "Declined" }),
@@ -61,36 +60,30 @@ export default function VendorRequests() {
             )
           );
         } else {
-          setRequests((prev) => prev.filter((req) => req._id !== requestId));
+          setRequests((prev) =>
+            prev.map((req) =>
+              req._id === requestId ? { ...req, status: "Declined" } : req
+            )
+          );
         }
-        alert(`Request ${action}ed successfully!`);
+        setMessage(`Request ${action}ed successfully!`);
       } else {
         console.error("Action failed:", data.message);
+        setMessage(`Failed to ${action} request: ${data.message}`);
       }
     } catch (error) {
       console.error("Error updating request:", error);
+      setMessage(`Error updating request: ${error.message}`);
     }
   };
   
-  
-  
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-xl">
-        Loading requests...
-      </div>
-    );
-  }
-
   return (
     <div
       className="min-h-screen p-8 bg-cover bg-center"
       style={{ backgroundImage: "url('/bg.png')" }}
     >
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Bookings and Requests
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Bookings and Requests</h1>
+      {message && <p className="text-center text-red-500">{message}</p>}
       {requests.length === 0 ? (
         <p className="text-center">No pending requests!</p>
       ) : (
@@ -107,32 +100,35 @@ export default function VendorRequests() {
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div>
-                  <p className="font-semibold">
-                    Name: {request.couple_id?.username}
-                  </p>
-                  <p>
-                    Date of event:{" "}
-                    {request.event_date
-                      ? new Date(request.event_date).toLocaleDateString()
-                      : "N/A"}
-                  </p>
+                  <p className="font-semibold">Name: {request.couple_id?.username || "N/A"}</p>
+                  <p>Date of event: {new Date(request.couple_id?.wedding_date).toLocaleDateString() || "N/A"}</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                {request.status === 'Accepted' ? (
-                  <button className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                {request.status === "Accepted" ? (
+                  <button
+                    className="bg-yellow-500 text-white px-4 py-2 rounded"
+                    disabled
+                  >
                     Accepted
+                  </button>
+                ) : request.status === "Declined" ? (
+                  <button
+                    className="bg-gray-500 text-white px-4 py-2 rounded"
+                    disabled
+                  >
+                    Declined
                   </button>
                 ) : (
                   <>
                     <button
-                      onClick={() => handleAction(request._id, 'accept')}
+                      onClick={() => handleAction(request._id, "accept")}
                       className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                     >
                       Accept
                     </button>
                     <button
-                      onClick={() => handleAction(request._id, 'decline')}
+                      onClick={() => handleAction(request._id, "decline")}
                       className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                     >
                       Decline

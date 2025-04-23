@@ -18,7 +18,8 @@ import Cars from "./Cars";
 import Events from "./Events";
 import VendorDetails from "./VendorDetails"; 
 import Cart from "./Cart"; // Import the Cart component
-import VendorRequests from "./VendorRequests";   
+import VendorRequests from "./VendorRequests";
+import Checkout from "./Checkout";   
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/vendor/:vendor_id" element={<VendorDetails/>} />
         <Route path="/Cart" element={<Cart/>} /> 
         <Route path="/vendor-requests" element={<VendorRequests />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
     </Router>
   );

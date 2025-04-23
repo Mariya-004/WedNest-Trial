@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const Cart = () => {
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
   const couple_id = localStorage.getItem("user_id");
-  const authToken = localStorage.getItem("authToken");
+  const authToken = localStorage.getItem("authToken"); // Changed storage key
   const navigate = useNavigate();
 
   const [cartItems, setCartItems] = useState([]);
@@ -17,10 +17,10 @@ const Cart = () => {
       try {
         const [cartRes, budgetRes] = await Promise.all([
           fetch(`${API_URL}/api/cart/${couple_id}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
+            //headers: { Authorization: `Bearer ${authToken}` },
           }),
           fetch(`${API_URL}/api/couple/budget/${couple_id}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
+            //headers: { Authorization: `Bearer ${authToken}` },
           }),
         ]);
 
@@ -38,13 +38,41 @@ const Cart = () => {
                 const vendorRes = await fetch(
                   `${API_URL}/api/vendor/details/${item.vendor_id._id}`,
                   {
-                    headers: { Authorization: `Bearer ${authToken}` },
+                   // headers: { Authorization: `Bearer ${authToken}` },
                   }
                 );
                 const vendorData = await vendorRes.json();
 
                 if (vendorData.status === "success") {
-                  return { ...item, vendor_id: vendorData.data };
+                  const requestIdRes = await fetch(
+                    `${API_URL}/api/request-id?couple_id=${couple_id}&vendor_id=${item.vendor_id._id}`,
+                    {
+                     // headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                  );
+                  const requestIdData = await requestIdRes.json();
+
+                  if (requestIdData.status === "success") {
+                    const requestStatusRes = await fetch(
+                      `${API_URL}/api/request/status/${requestIdData.request_id}`,
+                      {
+                       // headers: { Authorization: `Bearer ${authToken}` },
+                      }
+                    );
+                    const requestStatusData = await requestStatusRes.json();
+
+                    return {
+                      ...item,
+                      vendor_id: vendorData.data,
+                      status: requestStatusData.data.status || "Declined",
+                    };
+                  } else {
+                    return {
+                      ...item,
+                      vendor_id: vendorData.data,
+                      status: "Declined",
+                    };
+                  }
                 }
               } catch (error) {
                 console.error("Error fetching vendor details: ", error);
@@ -71,7 +99,7 @@ const Cart = () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          //Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ couple_id, vendor_id }),
       });
@@ -81,7 +109,7 @@ const Cart = () => {
         setCartItems((prev) =>
           prev.filter((item) => item.vendor_id._id !== vendor_id)
         );
-        setMessage({ type: "success", text: "Item removed from cart." });
+        setMessage({ type: "success", text: "Item removed from cart and associated request deleted." });
       } else {
         setMessage({ type: "error", text: data.message });
       }
@@ -148,7 +176,7 @@ const Cart = () => {
                   >
                     <div className="flex items-center gap-4">
                       <img
-                        src={getImageUrl(item.vendor_id.service_images[0])}
+                        src={getImageUrl(item.vendor_id.service_images && item.vendor_id.service_images[0])}
                         alt={item.vendor_id.businessName}
                         className="w-16 h-16 object-cover rounded-full shadow"
                       />
@@ -169,9 +197,9 @@ const Cart = () => {
                         handleRemoveItem(item.vendor_id._id);
                       }}
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow"
-                      disabled={item.status === "Confirmed by Vendor"}
+                      disabled={item.status === "Accepted"}
                     >
-                      {item.status === "Confirmed by Vendor" ? "Locked" : "Remove"}
+                      {item.status === "Accepted" ? "Locked" : "Remove"}
                     </button>
                   </div>
                 ))}
@@ -191,6 +219,13 @@ const Cart = () => {
                   </p>
                 )}
               </div>
+              <button
+  onClick={() => navigate("/checkout")}
+  className="fixed bottom-6 right-6 bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-lg shadow-lg text-lg"
+>
+  Proceed to Checkout
+</button>
+
             </>
           )}
         </div>
@@ -200,3 +235,4 @@ const Cart = () => {
 };
 
 export default Cart;
+//
